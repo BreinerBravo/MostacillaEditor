@@ -63,6 +63,7 @@
   align-items: center;
   gap: 7px;
   margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 
 .weave-map-zoom button {
@@ -87,6 +88,23 @@
 .weave-map-zoom .weave-map-fit {
   margin-left: auto;
   font-size: 10px;
+}
+
+.canvas-rotate-button {
+  display: block;
+  margin-top: 5px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #80646a;
+  font-size: 11px;
+}
+
+.weave-map-zoom [aria-pressed="true"] {
+  border-color: #c98995;
+  background: #fbf1f2;
+  color: #8d5260;
 }
 
 .weave-map-viewport {
@@ -238,6 +256,10 @@
 
   .weave-map-zoom {
     gap: 6px;
+  }
+
+  .weave-map-zoom .weave-map-fit {
+    margin-left: 0;
   }
 
   .weave-map-zoom button {

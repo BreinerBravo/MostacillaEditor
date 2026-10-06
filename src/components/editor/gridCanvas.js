@@ -1,4 +1,4 @@
-export function renderGrid(canvas, pattern, cellSize) {
+export function renderGrid(canvas, pattern, cellSize, rotation = 0) {
   if (!canvas || !pattern) return;
   const context = canvas.getContext('2d');
   context.clearRect(0, 0, canvas.width, canvas.height);
@@ -6,8 +6,12 @@ export function renderGrid(canvas, pattern, cellSize) {
   context.fillRect(0, 0, canvas.width, canvas.height);
 
   for (let index = 0; index < pattern.cells.length; index++) {
-    const x = (index % pattern.width) * cellSize;
-    const y = Math.floor(index / pattern.width) * cellSize;
+    const row = Math.floor(index / pattern.width);
+    const col = index % pattern.width;
+    const displayCol = rotation ? pattern.height - 1 - row : col;
+    const displayRow = rotation ? col : row;
+    const x = displayCol * cellSize;
+    const y = displayRow * cellSize;
     const bead = pattern.palette.find(color => color.id === pattern.cells[index]);
     if (bead) {
       context.fillStyle = bead.hex;

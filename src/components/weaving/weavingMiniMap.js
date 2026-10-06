@@ -2,7 +2,7 @@ import { getWeavingCoordinate } from '../../domain/weaving/WeavingSequence.js';
 
 const ROUTE_COLOR = '#b97884';
 
-export function renderWeavingMiniMap(canvas, pattern, progress) {
+export function renderWeavingMiniMap(canvas, pattern, progress, rotation = 0) {
   if (!canvas || !pattern || !progress) return;
 
   const width = pattern.width;
@@ -16,8 +16,10 @@ export function renderWeavingMiniMap(canvas, pattern, progress) {
   const cellSize = Math.min(24, 900 / width, 900 / height);
   const gridWidth = width * cellSize;
   const gridHeight = height * cellSize;
-  const canvasWidth = Math.max(1, Math.ceil(gridWidth + routeGutterX));
-  const canvasHeight = Math.max(1, Math.ceil(gridHeight + routeGutterY));
+  const baseWidth = Math.max(1, Math.ceil(gridWidth + routeGutterX));
+  const baseHeight = Math.max(1, Math.ceil(gridHeight + routeGutterY));
+  const canvasWidth = rotation ? baseHeight : baseWidth;
+  const canvasHeight = rotation ? baseWidth : baseHeight;
   const gridX = horizontalRoute ? gutter : 0;
   const gridY = horizontalRoute ? 0 : gutter;
 
@@ -26,9 +28,10 @@ export function renderWeavingMiniMap(canvas, pattern, progress) {
   canvas.style.aspectRatio = `${canvasWidth} / ${canvasHeight}`;
   const context = canvas.getContext('2d');
   if (!context) return;
-  context.clearRect(0, 0, canvasWidth, canvasHeight);
+  if (rotation) { context.translate(baseHeight, 0); context.rotate(Math.PI / 2); }
+  context.clearRect(0, 0, baseWidth, baseHeight);
   context.fillStyle = '#fff';
-  context.fillRect(0, 0, canvasWidth, canvasHeight);
+  context.fillRect(0, 0, baseWidth, baseHeight);
 
   const colorById = new Map(pattern.palette.map(color => [color.id, color.hex]));
   for (let row = 0; row < height; row++) {
@@ -98,6 +101,26 @@ export function scaleWeavingMiniMap(canvas, zoom = 1) {
   const scale = fitScale * zoom;
   canvas.style.width = `${Math.max(1, Math.round(canvas.width * scale))}px`;
   canvas.style.height = `${Math.max(1, Math.round(canvas.height * scale))}px`;
+}
+
+export function centerWeavingMiniMap(canvas, pattern, progress, rotation = 0) {
+  if (!canvas?.width || !pattern || !progress) return;
+  const axisLength = progress.axis === 'row' ? pattern.width : pattern.height;
+  const gutter = Math.min(18, Math.max(7, 720 / Math.max(pattern.width, pattern.height)));
+  const horizontalRoute = progress.axis === 'row';
+  const gridX = horizontalRoute ? gutter : 0;
+  const gridY = horizontalRoute ? 0 : gutter;
+  const cellSize = Math.min(24, 900 / pattern.width, 900 / pattern.height);
+  const step = Math.max(0, Math.min(Number(progress.currentStep) || 0, pattern.width * pattern.height - 1));
+  const point = getWeavingCoordinate(step, pattern, progress);
+  let x = gridX + (point.col + 0.5) * cellSize;
+  let y = gridY + (point.row + 0.5) * cellSize;
+  if (rotation) [x, y] = [canvas.height - y, x];
+  const scaleX = canvas.clientWidth / canvas.width;
+  const scaleY = canvas.clientHeight / canvas.height;
+  const viewport = canvas.parentElement;
+  viewport.scrollLeft = Math.max(0, x * scaleX - viewport.clientWidth / 2);
+  viewport.scrollTop = Math.max(0, y * scaleY - viewport.clientHeight / 2);
 }
 
 function drawDirectionArrow(context, x, y, direction, color) {

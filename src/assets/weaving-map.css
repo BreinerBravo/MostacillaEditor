@@ -1,0 +1,264 @@
+.weave-layout {
+  display: grid;
+  grid-template-columns: minmax(340px, 460px) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(24px, 4vw, 56px);
+  width: min(calc(100% - 40px), 1280px);
+  margin: 26px auto 40px;
+}
+
+.weave-layout .weave-content {
+  width: 100%;
+  margin: 0;
+}
+
+.weave-map {
+  position: sticky;
+  top: 20px;
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 8px 26px #7254510c;
+  text-align: left;
+}
+
+.weave-map-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.weave-map-heading > span {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.weave-map-heading b {
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.weave-map-heading small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.weave-map-heading .text-button {
+  flex: none;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 11px;
+}
+
+.weave-map-zoom {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.weave-map-zoom button {
+  min-width: 34px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #776d68;
+  font-size: 14px;
+}
+
+.weave-map-zoom output {
+  min-width: 48px;
+  color: #827873;
+  font-size: 11px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.weave-map-zoom .weave-map-fit {
+  margin-left: auto;
+  font-size: 10px;
+}
+
+.weave-map-viewport {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 100%;
+  height: min(64vh, 620px);
+  min-height: 340px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #eee5e1;
+  border-radius: 10px;
+  background-color: #faf7f5;
+  background-image: linear-gradient(45deg, #f1ebe8 25%, transparent 25%), linear-gradient(-45deg, #f1ebe8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f1ebe8 75%), linear-gradient(-45deg, transparent 75%, #f1ebe8 75%);
+  background-size: 18px 18px;
+  background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+}
+
+.weave-minimap {
+  display: block;
+  flex: none;
+  max-width: none;
+  margin: 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.weave-minimap.is-dragging {
+  cursor: grabbing;
+}
+
+.weave-map.is-expanded .weave-map-viewport {
+  height: min(78vh, 780px);
+}
+
+.weave-preview {
+  margin: 14px 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fcf8f6;
+  text-align: left;
+}
+
+.weave-preview summary {
+  padding: 11px 13px;
+  color: #9d6873;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.weave-preview > p {
+  margin: 0 12px 8px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.weave-preview-viewport {
+  height: min(48vh, 380px);
+  min-height: 220px;
+  margin: 0 12px 12px;
+  width: calc(100% - 24px);
+}
+
+.weave-axis-hint {
+  margin: -4px 0 12px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+@media (max-width: 850px) {
+  .weave-layout {
+    grid-template-columns: minmax(290px, 420px) minmax(0, 1fr);
+    gap: 20px;
+    width: min(calc(100% - 28px), 850px);
+  }
+
+  .weave-map {
+    padding: 12px;
+  }
+
+  .weave-map-viewport {
+    height: min(58vh, 520px);
+    min-height: 280px;
+  }
+}
+
+@media (max-width: 650px) {
+  .weave-layout {
+    display: flex;
+    flex-direction: column;
+    width: min(calc(100% - 20px), 520px);
+    gap: 20px;
+    margin: 15px auto 30px;
+  }
+
+  .weave-layout .weave-content {
+    width: 100%;
+    margin: 0;
+  }
+
+  .weave-content h1 {
+    margin: 0;
+    font-size: 24px;
+  }
+
+  .weave-step {
+    margin: 4px 0 12px;
+  }
+
+  .weave-map {
+    position: static;
+    width: 100%;
+    padding: 10px;
+  }
+
+  .weave-map:not(.is-expanded) .weave-map-zoom,
+  .weave-map:not(.is-expanded) .weave-map-viewport {
+    display: none;
+  }
+
+  .weave-map-heading {
+    align-items: center;
+    margin: 0;
+  }
+
+  .weave-map-heading b {
+    font-size: 13px;
+  }
+
+  .weave-map-heading small {
+    font-size: 10px;
+  }
+
+  .weave-map.is-expanded .weave-map-heading {
+    margin-bottom: 10px;
+  }
+
+  .weave-map-viewport {
+    height: min(55vh, 460px);
+    min-height: 260px;
+  }
+
+  .weave-map.is-expanded .weave-map-viewport {
+    height: min(62vh, 520px);
+  }
+
+  .weave-map-zoom {
+    gap: 6px;
+  }
+
+  .weave-map-zoom button {
+    min-width: 38px;
+    height: 36px;
+  }
+
+  .weave-preview summary {
+    padding: 9px 10px;
+  }
+
+  .weave-preview-viewport {
+    height: min(48vh, 380px);
+    min-height: 220px;
+  }
+
+  .weave-controls {
+    gap: 8px;
+  }
+
+  .weave-controls button {
+    padding: 11px 8px;
+  }
+}

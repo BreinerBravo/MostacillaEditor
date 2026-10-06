@@ -1,0 +1,3 @@
+export interface PaletteColor { id: string; name: string; hex: string; sortOrder?: number }
+export interface WeavingProgress { id: string; currentStep: number; totalSteps: number; axis: 'row' | 'column'; start: 'top' | 'bottom' | 'right'; serpentine: boolean; patternVersion: number; updatedAt: string }
+export interface Pattern { id: string; version: number; name: string; description?: string; width: number; height: number; cells: Array<string | 0>; palette: PaletteColor[]; weaving: { axis: 'row' | 'column'; start: 'top' | 'bottom' | 'right'; serpentine: boolean }; progress: WeavingProgress[]; createdAt: string; updatedAt: string }

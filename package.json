@@ -1,0 +1,10 @@
+{
+  "name": "mostacillas-designer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Diseñador local y offline de manillas de mostacillas",
+  "scripts": {
+    "start": "node server.mjs"
+  }
+}

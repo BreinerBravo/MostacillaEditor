@@ -1,0 +1,11 @@
+{
+  "name": "Mostacillas · Diseñador de manillas",
+  "short_name": "Mostacillas",
+  "description": "Diseña y teje manillas de mostacillas, también sin conexión.",
+  "lang": "es",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff9f7",
+  "theme_color": "#fff9f7",
+  "icons": [{ "src": "src/assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

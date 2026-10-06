@@ -101,6 +101,30 @@
   font-size: 11px;
 }
 
+.app-update-button {
+  position: fixed;
+  left: max(5px, env(safe-area-inset-right));
+  bottom: max(5px, env(safe-area-inset-bottom));
+  z-index: 20;
+  padding: 8px 11px;
+  border: 1px solid #e7d9d5;
+  border-radius: 999px;
+  background: #fffdfc;
+  color: #80646a;
+  box-shadow: 0 3px 12px #493a381c;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.app-update-button:hover:not(:disabled) {
+  background: #fbf1f2;
+}
+
+.app-update-button:disabled {
+  cursor: wait;
+  opacity: .75;
+}
+
 .weave-map-zoom [aria-pressed="true"] {
   border-color: #c98995;
   background: #fbf1f2;

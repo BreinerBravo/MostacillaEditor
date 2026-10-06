@@ -44,7 +44,8 @@ export const PRESET_COLORS = [
   ...[['Blanco', '#FFFFFF'], ['Perla', '#E9E1D9'], ['Plata', '#B8B8BE'], ['Gris', '#85858D'], ['Grafito', '#505058'], ['Negro', '#17171B'], ['Marfil', '#F3E8D5'], ['Arena', '#C9B89C'], ['Marrón', '#765341']].map(([name, hex]) => ({ id: `preset-neutral-${name.toLowerCase()}`, name, hex, category: 'Neutros', source: 'preset' })),
   ...[
     ['basic-red', 'Rojo', '#FF0000', 'Rojos'], ['basic-orange', 'Naranja', '#FF8000', 'Naranjas'],
-    ['basic-yellow', 'Amarillo', '#FFFF00', 'Amarillos'], ['basic-lime', 'Verde lima', '#80FF00', 'Lima'],
+    ['basic-yellow', 'Amarillo', '#FFFF00', 'Amarillos'], ['basic-white', 'Blanco', '#FFFFFF', 'Neutros'],
+    ['basic-lime', 'Verde lima', '#80FF00', 'Lima'],
     ['basic-green', 'Verde', '#00FF00', 'Verdes'], ['basic-teal', 'Verde azulado', '#00FF80', 'Turquesas'],
     ['basic-cyan', 'Cian', '#00FFFF', 'Cianes'], ['basic-blue', 'Azul', '#0000FF', 'Azules'],
     ['basic-indigo', 'Índigo', '#4B0082', 'Índigos'], ['basic-purple', 'Violeta', '#8000FF', 'Violetas'],

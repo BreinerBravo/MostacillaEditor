@@ -36,10 +36,16 @@ export function renderWeavingMiniMap(canvas, pattern, progress, rotation = 0) {
   const colorById = new Map(pattern.palette.map(color => [color.id, color.hex]));
   for (let row = 0; row < height; row++) {
     for (let col = 0; col < width; col++) {
-      const hex = colorById.get(pattern.cells[row * width + col]);
-      if (!hex) continue;
+      const x = gridX + col * cellSize;
+      const y = gridY + row * cellSize;
+      const cellId = pattern.cells[row * width + col];
+      const hex = colorById.get(cellId);
+      if (!hex) {
+        drawEmptyCell(context, x, y, cellSize);
+        continue;
+      }
       context.fillStyle = hex;
-      context.fillRect(gridX + col * cellSize, gridY + row * cellSize, cellSize, cellSize);
+      context.fillRect(x, y, cellSize, cellSize);
     }
   }
 
@@ -138,4 +144,16 @@ function drawDirectionArrow(context, x, y, direction, color) {
   }
   context.closePath();
   context.fill();
+}
+
+function drawEmptyCell(context, x, y, cellSize) {
+  context.fillStyle = '#faf9f7';
+  context.fillRect(x, y, cellSize, cellSize);
+  const tileSize = cellSize / 4;
+  context.fillStyle = '#efedeb';
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      if ((row + col) % 2 === 0) context.fillRect(x + col * tileSize, y + row * tileSize, tileSize, tileSize);
+    }
+  }
 }

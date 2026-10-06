@@ -22,9 +22,23 @@ export function renderGrid(canvas, pattern, cellSize, rotation = 0) {
         context.fillStyle = 'rgba(255,255,255,.43)';
         context.fill();
       }
+    } else {
+      drawEmptyCell(context, x, y, cellSize);
     }
-    context.strokeStyle = cellSize > 11 ? '#e8e1dd' : 'rgba(130,110,100,.28)';
+    context.strokeStyle = bead && /^#(?:fff|ffffff)$/i.test(bead.hex) ? '#c9c4c0' : cellSize > 11 ? '#e8e1dd' : 'rgba(130,110,100,.28)';
     context.lineWidth = 1;
     context.strokeRect(x + 0.5, y + 0.5, cellSize, cellSize);
+  }
+}
+
+function drawEmptyCell(context, x, y, cellSize) {
+  context.fillStyle = '#faf9f7';
+  context.fillRect(x, y, cellSize, cellSize);
+  const tile = Math.max(2, Math.min(6, cellSize / 4));
+  context.fillStyle = '#efedeb';
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      if ((row + col) % 2 === 0) context.fillRect(x + col * cellSize / 4, y + row * cellSize / 4, Math.min(tile, cellSize / 4), Math.min(tile, cellSize / 4));
+    }
   }
 }

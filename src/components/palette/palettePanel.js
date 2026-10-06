@@ -2,9 +2,12 @@ import { COLOR_CATEGORIES, PRESET_COLORS } from '../../domain/pattern/ColorCatal
 
 export function renderPalettePanel(pattern, selected, group, view, maxDimension, escapeText) {
   const active = pattern.palette[selected]?.id;
-  const personal = pattern.palette.map((color, index) => ({ ...color, index })).filter(color => color.source === 'custom');
+  const legacyIds = new Set(['rose', 'blue', 'gold', 'plum', 'cream']);
+  const presetIds = new Set(PRESET_COLORS.map(color => color.id));
+  const personal = pattern.palette.map((color, index) => ({ ...color, index })).filter(color => color.source === 'custom' || (!presetIds.has(color.id) && !legacyIds.has(color.id)));
+  const legacyPresets = pattern.palette.map((color, index) => ({ ...color, index })).filter(color => legacyIds.has(color.id));
   const swatches = group === 'presets'
-    ? PRESET_COLORS.map(color => `<button class="color-swatch" data-preset="${color.id}" data-category="${color.category}" data-name="${escapeText(color.name).toLowerCase()}" aria-label="${escapeText(color.name)} ${color.hex}" title="${escapeText(color.name)} · ${color.hex}"><i style="--swatch:${color.hex}"></i><span>${escapeText(color.name)}</span>${active === color.id ? '<b>✓</b>' : ''}</button>`).join('')
+    ? [...legacyPresets.map(color => `<button class="color-swatch ${active === color.id ? 'selected' : ''}" data-color="${color.index}" data-category="Neutros" data-name="${escapeText(color.name).toLowerCase()}" aria-label="${escapeText(color.name)} ${color.hex}" title="${escapeText(color.name)} · ${color.hex}"><i style="--swatch:${color.hex}"></i><span>${escapeText(color.name)}</span>${active === color.id ? '<b>✓</b>' : ''}</button>`), ...PRESET_COLORS.map(color => `<button class="color-swatch ${active === color.id ? 'selected' : ''}" data-preset="${color.id}" data-category="${color.category}" data-name="${escapeText(color.name).toLowerCase()}" aria-label="${escapeText(color.name)} ${color.hex}" title="${escapeText(color.name)} · ${color.hex}"><i style="--swatch:${color.hex}"></i><span>${escapeText(color.name)}</span>${active === color.id ? '<b>✓</b>' : ''}</button>`)].join('')
     : personal.map(color => `<button class="color-swatch personal-swatch ${active === color.id ? 'selected' : ''}" data-color="${color.index}" data-category="Personalizados" data-name="${escapeText(color.name).toLowerCase()}" aria-label="${escapeText(color.name)} ${color.hex}" title="${escapeText(color.name)} · ${color.hex}"><i style="--swatch:${color.hex}"></i><span>${escapeText(color.name)}</span><small>${pattern.cells.filter(cell => cell === color.id).length}</small></button>`).join('');
   const categoryOptions = ['Todos', ...COLOR_CATEGORIES].map(category => `<option value="${category}">${category}</option>`).join('');
   return `<aside class="palette-panel">

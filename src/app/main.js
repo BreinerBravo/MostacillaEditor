@@ -8,6 +8,8 @@ import { downloadPattern } from '../services/export.service.js';
 import { renderGrid } from '../components/editor/gridCanvas.js';
 import { renderPatternPreview } from '../components/pattern/patternPreview.js';
 import { renderPalettePanel } from '../components/palette/palettePanel.js';
+import { renderColorPicker } from '../components/palette/colorPicker.js';
+import { PRESET_COLORS, hexToHsv, hsvToHex } from '../domain/pattern/ColorCatalog.js';
 import { showToast } from '../components/common/toast.js';
 import { createAutosave } from '../composables/useAutosave.js';
 import { registerServiceWorker } from '../infrastructure/pwa/registerServiceWorker.js';
@@ -15,6 +17,9 @@ const app = document.querySelector('#app');
 let patterns = [];
 let current = null;
 let selected = 0;
+let paletteGroup = 'presets';
+let paletteView = 'grid';
+let colorDraft = { name: 'Color personalizado', hue: 0, saturation: 100, brightness: 100, hex: '#FF0000' };
 let tool = 'paint';
 let zoom = 1;
 let history = [];
@@ -50,7 +55,7 @@ function renderEditor() {
   app.innerHTML = `<main class="editor-shell"><header class="editor-header"><button class="back-button" data-action="home" aria-label="Volver a diseños">←</button><div class="title-block"><input class="design-title" aria-label="Nombre del diseño" value="${esc(current.name)}" maxlength="60"/><span data-status>Guardado local</span></div><div class="header-actions"><button class="button secondary compact" data-action="export">↓ Exportar</button><button class="button primary compact" data-action="weave">✳ Tejer</button></div></header>
   <div class="editor-layout"><aside class="tools-panel"><p class="panel-label">HERRAMIENTAS</p><button class="tool-button active" data-tool="paint"><span>✎</span>Pintar</button><button class="tool-button" data-tool="erase"><span>⌫</span>Borrar</button><button class="tool-button" data-tool="fill"><span>▧</span>Rellenar</button><button class="tool-button" data-tool="pan"><span>✋</span>Mover</button><div class="tool-divider"></div><button class="tool-button" data-action="undo" ${history.length ? '' : 'disabled'}><span>↶</span>Deshacer</button><button class="tool-button" data-action="redo" ${future.length ? '' : 'disabled'}><span>↷</span>Rehacer</button><div class="tool-divider"></div><div class="zoom-tools"><button data-action="zoom-out" aria-label="Alejar">−</button><span>${Math.round(zoom * 100)}%</span><button data-action="zoom-in" aria-label="Acercar">＋</button></div><button class="tool-button" data-action="fit"><span>▣</span>Ajustar</button></aside>
   <section class="canvas-area"><div class="canvas-heading"><div><p class="eyebrow">VISTA DEL PATRÓN</p><strong>${current.width} × ${current.height}</strong></div><span>Selecciona un color y toca las celdas</span><div class="mobile-zoom"><button data-action="zoom-out" aria-label="Alejar">−</button><span>${Math.round(zoom * 100)}%</span><button data-action="zoom-in" aria-label="Acercar">＋</button></div></div><div class="canvas-viewport"><canvas id="pattern-canvas" aria-label="Cuadrícula del patrón"></canvas></div><div class="canvas-foot"><span>${current.cells.filter(Boolean).length} mostacillas pintadas</span><span>${navigator.onLine ? '● En línea' : '● Sin conexión'}</span></div></section>
-  ${renderPalettePanel(current, selected, MAX_DIMENSION, esc)}</div><footer class="editor-footer">Cambios guardados automáticamente <span>·</span> funciona sin conexión</footer></main><div class="toast" role="status"></div>`;
+  ${renderPalettePanel(current, selected, paletteGroup, paletteView, MAX_DIMENSION, esc)}</div><footer class="editor-footer">Cambios guardados automáticamente <span>·</span> funciona sin conexión</footer></main><div class="toast" role="status"></div>`;
   const activeTool = document.querySelector(`[data-tool="${tool}"]`); if (activeTool) activeTool.classList.add('active');
   setupCanvas();
 }
@@ -69,16 +74,100 @@ function renderWeaving() { if (!current) return; const prog = progressId ? curre
 function weavingCoordinate(step, prog) { return getStep(current, prog, step); }
 function setupWeaving() { app.innerHTML = `<main class="setup-shell"><header class="weave-header"><button class="back-button" data-action="editor">←</button><span>Configurar tejido</span></header><form id="weave-form" class="setup-card"><p class="eyebrow">ANTES DE EMPEZAR</p><h1>¿Cómo vas a tejer?</h1><label>Avance por<select name="axis"><option value="row">Filas (de lado a lado)</option><option value="column">Columnas (de arriba abajo)</option></select></label><label>Comenzar desde<select name="start"><option value="top">Arriba / izquierda</option><option value="bottom">Abajo</option><option value="right">Derecha</option></select></label><label class="check-label"><input type="checkbox" name="serpentine" checked/> Alternar el sentido en cada fila o columna</label><div class="setup-buttons"><button type="button" class="button secondary" data-action="editor">Volver</button><button class="button primary">Empezar tejido</button></div></form></main>`; }
 function renderColors() { app.insertAdjacentHTML('beforeend', `<div class="modal-backdrop"><form id="colors-form" class="modal"><button type="button" class="modal-close" data-action="close">×</button><p class="eyebrow">PALETA</p><h2>Administrar colores</h2><div class="manage-colors">${current.palette.map((c, i) => `<div class="manage-color"><input type="color" value="${c.hex}" data-hex="${i}" aria-label="Color ${esc(c.name)}"/><input value="${esc(c.name)}" maxlength="30" data-name="${i}" aria-label="Nombre del color"/><button type="button" data-delete-color="${i}" aria-label="Eliminar ${esc(c.name)}">×</button></div>`).join('')}</div><button class="button primary full" data-action="close">Listo</button></form></div>`); }
+function openColorPicker(hex = '#E84568', name = 'Color personalizado') {
+  colorDraft = { name, ...hexToHsv(hex), hex: hex.toUpperCase() };
+  app.insertAdjacentHTML('beforeend', renderColorPicker(colorDraft, esc));
+  bindColorPicker();
+  syncPickerControls();
+}
+function rgbToHex(r, g, b) { return `#${[r, g, b].map(value => Math.max(0, Math.min(255, Number(value) || 0)).toString(16).padStart(2, '0')).join('')}`.toUpperCase(); }
+function setDraftHex(hex) {
+  if (!/^#[\da-f]{6}$/i.test(hex)) return;
+  colorDraft.hex = hex.toUpperCase();
+  Object.assign(colorDraft, hexToHsv(colorDraft.hex));
+  syncPickerControls();
+}
+function syncPickerControls() {
+  const hexInput = document.querySelector('#color-hex');
+  if (!hexInput) return;
+  hexInput.value = colorDraft.hex;
+  document.querySelector('#color-hue').value = Math.round(colorDraft.hue);
+  document.querySelector('#color-saturation').value = Math.round(colorDraft.saturation);
+  document.querySelector('#color-brightness').value = Math.round(colorDraft.brightness);
+  document.querySelector('#color-saturation-value').value = `${Math.round(colorDraft.saturation)}%`;
+  document.querySelector('#color-brightness-value').value = `${Math.round(colorDraft.brightness)}%`;
+  document.querySelector('#color-spectrum').style.setProperty('--picker-hue', `${colorDraft.hue}deg`);
+  document.querySelector('#spectrum-cursor').style.cssText = `left:${colorDraft.saturation}%;top:${100 - colorDraft.brightness}%`;
+  document.querySelector('#color-preview-large').style.setProperty('--preview-color', colorDraft.hex);
+  const [r, g, b] = colorDraft.hex.slice(1).match(/../g).map(value => parseInt(value, 16));
+  document.querySelector('#color-red').value = r;
+  document.querySelector('#color-green').value = g;
+  document.querySelector('#color-blue').value = b;
+}
+function setSpectrumFromPointer(event) {
+  const box = event.currentTarget.getBoundingClientRect();
+  colorDraft.saturation = Math.max(0, Math.min(100, (event.clientX - box.left) / box.width * 100));
+  colorDraft.brightness = Math.max(0, Math.min(100, (1 - (event.clientY - box.top) / box.height) * 100));
+  colorDraft.hex = hsvToHex(colorDraft.hue, colorDraft.saturation, colorDraft.brightness);
+  syncPickerControls();
+}
+function bindColorPicker() {
+  const spectrum = document.querySelector('#color-spectrum');
+  spectrum.onpointerdown = event => { spectrum.setPointerCapture(event.pointerId); setSpectrumFromPointer(event); };
+  spectrum.onpointermove = event => { if (event.buttons) setSpectrumFromPointer(event); };
+  spectrum.onkeydown = event => { const step = event.shiftKey ? 10 : 2; if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return; event.preventDefault(); if (event.key === 'ArrowLeft') colorDraft.saturation = Math.max(0, colorDraft.saturation - step); if (event.key === 'ArrowRight') colorDraft.saturation = Math.min(100, colorDraft.saturation + step); if (event.key === 'ArrowDown') colorDraft.brightness = Math.max(0, colorDraft.brightness - step); if (event.key === 'ArrowUp') colorDraft.brightness = Math.min(100, colorDraft.brightness + step); colorDraft.hex = hsvToHex(colorDraft.hue, colorDraft.saturation, colorDraft.brightness); syncPickerControls(); };
+  document.querySelector('#color-hue').oninput = event => { colorDraft.hue = Number(event.target.value); colorDraft.hex = hsvToHex(colorDraft.hue, colorDraft.saturation, colorDraft.brightness); syncPickerControls(); };
+  document.querySelector('#color-saturation').oninput = event => { colorDraft.saturation = Number(event.target.value); colorDraft.hex = hsvToHex(colorDraft.hue, colorDraft.saturation, colorDraft.brightness); syncPickerControls(); };
+  document.querySelector('#color-brightness').oninput = event => { colorDraft.brightness = Number(event.target.value); colorDraft.hex = hsvToHex(colorDraft.hue, colorDraft.saturation, colorDraft.brightness); syncPickerControls(); };
+  document.querySelector('#color-hex').onchange = event => setDraftHex(event.target.value);
+  for (const channel of ['red', 'green', 'blue']) document.querySelector(`#color-${channel}`).onchange = () => setDraftHex(rgbToHex(document.querySelector('#color-red').value, document.querySelector('#color-green').value, document.querySelector('#color-blue').value));
+  document.querySelector('#custom-color-name').oninput = event => { colorDraft.name = event.target.value; };
+  document.querySelector('#sampled-image').onpointerdown = event => {
+    const canvas = event.currentTarget, rect = canvas.getBoundingClientRect();
+    const x = Math.max(0, Math.min(canvas.width - 1, Math.floor((event.clientX - rect.left) * canvas.width / rect.width)));
+    const y = Math.max(0, Math.min(canvas.height - 1, Math.floor((event.clientY - rect.top) * canvas.height / rect.height)));
+    const [r, g, b] = canvas.getContext('2d').getImageData(x, y, 1, 1).data;
+    setDraftHex(rgbToHex(r, g, b));
+  };
+}
+async function useScreenEyedropper() {
+  const note = document.querySelector('#eyedropper-note');
+  if (!window.EyeDropper) { note.textContent = 'Este navegador no ofrece el cuentagotas de pantalla. Usa “Tomar de imagen” para muestrear una imagen.'; return; }
+  try { const result = await new EyeDropper().open(); setDraftHex(result.sRGBHex); note.textContent = `Color de pantalla seleccionado: ${result.sRGBHex}`; }
+  catch (error) { if (error.name !== 'AbortError') note.textContent = 'No se pudo abrir el cuentagotas en este contexto.'; }
+}
+function loadImageForSampling(file) {
+  if (!file?.type.startsWith('image/')) return notify('Selecciona un archivo de imagen.');
+  const url = URL.createObjectURL(file), image = new Image();
+  image.onload = () => {
+    const canvas = document.querySelector('#sampled-image'), maxWidth = 640, maxHeight = 260;
+    const scale = Math.min(1, maxWidth / image.naturalWidth, maxHeight / image.naturalHeight);
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+    document.querySelector('#sampled-image-wrap').hidden = false;
+    URL.revokeObjectURL(url);
+  };
+  image.onerror = () => { URL.revokeObjectURL(url); notify('No se pudo cargar la imagen.'); };
+  image.src = url;
+}
+function filterPalette() {
+  const query = document.querySelector('#palette-search')?.value.trim().toLocaleLowerCase() || '';
+  const category = document.querySelector('#palette-category')?.value || 'Todos';
+  document.querySelectorAll('.color-swatch').forEach(swatch => {
+    swatch.hidden = !swatch.dataset.name.includes(query) || (category !== 'Todos' && swatch.dataset.category !== category);
+  });
+}
 function exportPattern(p = current) { downloadPattern(p); }
 async function importFile(file) { try { const p = await readPatternFile(file); const imported = { ...clone(p), id: uid(), name: `${p.name || 'Diseño'} (importado)`, version: 1, createdAt: timestamp(), updatedAt: timestamp(), progress: [] }; await savePattern(imported); await refreshList(); notify('Diseño importado.'); } catch (error) { notify(error.message || 'No se pudo importar el archivo.'); } }
 function bindEvents() {
-  app.onclick = async event => { const target = event.target.closest('[data-action], [data-tool], [data-color], [data-delete-color]'); if (!target) return; const action = target.dataset.action; if (target.dataset.tool) { tool = target.dataset.tool; document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('active', b === target)); return; } if (target.dataset.color != null) { selected = Number(target.dataset.color); document.querySelectorAll('[data-color]').forEach(b => b.classList.toggle('selected', b === target)); return; } if (target.dataset.deleteColor != null) { const idx = Number(target.dataset.deleteColor), color = current.palette[idx]; if (current.cells.includes(color.id) && !confirm(`Hay mostacillas ${color.name}. Al eliminar el color quedarán vacías. ¿Continuar?`)) return; current.cells = current.cells.map(v => v === color.id ? 0 : v); current.palette.splice(idx, 1); selected = 0; renderColors(); scheduleSave(); return; }
+  app.onclick = async event => { const target = event.target.closest('[data-action], [data-tool], [data-color], [data-preset], [data-delete-color]'); if (!target) return; const action = target.dataset.action; if (target.dataset.preset) { let index = current.palette.findIndex(color => color.id === target.dataset.preset); if (index < 0) { const preset = PRESET_COLORS.find(color => color.id === target.dataset.preset); if (!preset) return; current.palette.push({ ...preset }); index = current.palette.length - 1; scheduleSave(); } selected = index; renderEditor(); return; } if (target.dataset.tool) { tool = target.dataset.tool; document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('active', b === target)); return; } if (target.dataset.color != null) { selected = Number(target.dataset.color); document.querySelectorAll('[data-color]').forEach(b => b.classList.toggle('selected', b === target)); return; } if (target.dataset.deleteColor != null) { const idx = Number(target.dataset.deleteColor), color = current.palette[idx]; if (current.cells.includes(color.id) && !confirm(`Hay mostacillas ${color.name}. Al eliminar el color quedarán vacías. ¿Continuar?`)) return; current.cells = current.cells.map(v => v === color.id ? 0 : v); current.palette.splice(idx, 1); selected = 0; renderColors(); scheduleSave(); return; }
     if (action === 'new') newDialog(); else if (action === 'close') { target.closest('.modal-backdrop')?.remove(); } else if (action === 'home') { current = null; history = []; future = []; refreshList(); } else if (action === 'open') openPattern(target.dataset.id); else if (action === 'menu') { const p = patterns.find(x => x.id === target.dataset.id); const choice = prompt(`Acciones para ${p.name}: escribe duplicar, renombrar, exportar o eliminar`); if (choice === 'duplicar') { const copy = clone(p); copy.id = uid(); copy.name += ' (copia)'; copy.createdAt = copy.updatedAt = timestamp(); copy.progress = []; await savePattern(copy); await refreshList(); } else if (choice === 'renombrar') { const name = prompt('Nuevo nombre', p.name); if (name?.trim()) { p.name = name.trim(); p.updatedAt = timestamp(); await savePattern(p); await refreshList(); } } else if (choice === 'exportar') exportPattern(p); else if (choice === 'eliminar' && confirm(`¿Eliminar “${p.name}” y sus progresos?`)) { await removePattern(p.id); await refreshList(); } }
-    else if (action === 'import') document.querySelector('#import-file').click(); else if (action === 'export') exportPattern(); else if (action === 'undo') undoRedo(); else if (action === 'redo') undoRedo(true); else if (action === 'zoom-in' || action === 'zoom-out') { zoom = Math.max(.3, Math.min(2.5, zoom + (action === 'zoom-in' ? .15 : -.15))); setupCanvas(); } else if (action === 'fit') { zoom = 1; setupCanvas(); } else if (action === 'resize') resizePattern(Number(document.querySelector('#resize-width').value), Number(document.querySelector('#resize-height').value)); else if (action === 'add-color') addColor(); else if (action === 'edit-colors') renderColors(); else if (action === 'weave') { progressId = current.progress?.[0]?.id || null; progressId ? renderWeaving() : setupWeaving(); } else if (action === 'editor') renderEditor(); else if (action === 'step-next') { const p = findProgress(); p.currentStep = Math.min(p.totalSteps, p.currentStep + 1); scheduleSave(); renderWeaving(); } else if (action === 'step-back') { const p = findProgress(); p.currentStep = Math.max(0, p.currentStep - 1); scheduleSave(); renderWeaving(); } else if (action === 'jump') { const p = findProgress(); p.currentStep = Math.max(0, Math.min(p.totalSteps, Number(document.querySelector('#jump-step').value) - 1)); scheduleSave(); renderWeaving(); } else if (action === 'new-progress') setupWeaving();
+    else if (action === 'import') document.querySelector('#import-file').click(); else if (action === 'export') exportPattern(); else if (action === 'undo') undoRedo(); else if (action === 'redo') undoRedo(true); else if (action === 'zoom-in' || action === 'zoom-out') { zoom = Math.max(.3, Math.min(2.5, zoom + (action === 'zoom-in' ? .15 : -.15))); setupCanvas(); } else if (action === 'fit') { zoom = 1; setupCanvas(); } else if (action === 'resize') resizePattern(Number(document.querySelector('#resize-width').value), Number(document.querySelector('#resize-height').value)); else if (action === 'select-color') openColorPicker(); else if (action === 'eyedropper') useScreenEyedropper(); else if (action === 'sample-image') document.querySelector('#sample-image-file').click(); else if (action === 'palette-group') { paletteGroup = target.dataset.group; renderEditor(); } else if (action === 'palette-view') { paletteView = target.dataset.view; document.querySelector('.palette-swatches').className = `palette-swatches ${paletteView}`; document.querySelectorAll('[data-action="palette-view"]').forEach(button => button.classList.toggle('active', button.dataset.view === paletteView)); } else if (action === 'add-color') openColorPicker(); else if (action === 'edit-colors') renderColors(); else if (action === 'weave') { progressId = current.progress?.[0]?.id || null; progressId ? renderWeaving() : setupWeaving(); } else if (action === 'editor') renderEditor(); else if (action === 'step-next') { const p = findProgress(); p.currentStep = Math.min(p.totalSteps, p.currentStep + 1); scheduleSave(); renderWeaving(); } else if (action === 'step-back') { const p = findProgress(); p.currentStep = Math.max(0, p.currentStep - 1); scheduleSave(); renderWeaving(); } else if (action === 'jump') { const p = findProgress(); p.currentStep = Math.max(0, Math.min(p.totalSteps, Number(document.querySelector('#jump-step').value) - 1)); scheduleSave(); renderWeaving(); } else if (action === 'new-progress') setupWeaving();
   };
-  app.oninput = event => { if (event.target.matches('.design-title')) { current.name = event.target.value || 'Mi manilla'; scheduleSave(); } if (event.target.dataset.name != null) { const c = current.palette[Number(event.target.dataset.name)]; c.name = event.target.value; scheduleSave(); } if (event.target.dataset.hex != null) { current.palette[Number(event.target.dataset.hex)].hex = event.target.value; drawGrid(); scheduleSave(); } };
-  app.onchange = event => { if (event.target.id === 'import-file' && event.target.files[0]) importFile(event.target.files[0]); if (event.target.matches('[data-name], [data-hex]')) renderEditor(); };
-  app.onsubmit = async event => { if (event.target.id === 'new-form') { event.preventDefault(); const fd = new FormData(event.target), w = Number(fd.get('width')), h = Number(fd.get('height')); if (w * h > 100000) return notify('El tamaño máximo del patrón es 100.000 celdas.'); current = makePattern(fd.get('name'), w, h); await savePattern(current); history = []; future = []; selected = 0; tool = 'paint'; zoom = 1; renderEditor(); } if (event.target.id === 'weave-form') { event.preventDefault(); const fd = new FormData(event.target); const axis = fd.get('axis'); const p = createWeavingProgress(current, { axis, start: fd.get('start'), serpentine: fd.has('serpentine') }, uid(), timestamp()); current.progress ||= []; current.progress.push(p); progressId = p.id; scheduleSave(); renderWeaving(); } if (event.target.id === 'colors-form') event.preventDefault(); };
+  app.oninput = event => { if (event.target.id === 'palette-search') filterPalette(); if (event.target.matches('.design-title')) { current.name = event.target.value || 'Mi manilla'; scheduleSave(); } if (event.target.dataset.name != null) { const c = current.palette[Number(event.target.dataset.name)]; c.name = event.target.value; scheduleSave(); } if (event.target.dataset.hex != null) { current.palette[Number(event.target.dataset.hex)].hex = event.target.value; drawGrid(); scheduleSave(); } };
+  app.onchange = event => { if (event.target.id === 'palette-category') filterPalette(); if (event.target.id === 'sample-image-file' && event.target.files[0]) loadImageForSampling(event.target.files[0]); if (event.target.id === 'import-file' && event.target.files[0]) importFile(event.target.files[0]); if (event.target.matches('[data-name], [data-hex]')) renderEditor(); };
+  app.onsubmit = async event => { if (event.target.id === 'color-form') { event.preventDefault(); const name = colorDraft.name.trim() || 'Color personalizado'; current.palette.push({ id: uid(), name, hex: colorDraft.hex, source: 'custom' }); selected = current.palette.length - 1; paletteGroup = 'custom'; renderEditor(); scheduleSave(); } if (event.target.id === 'new-form') { event.preventDefault(); const fd = new FormData(event.target), w = Number(fd.get('width')), h = Number(fd.get('height')); if (w * h > 100000) return notify('El tamaño máximo del patrón es 100.000 celdas.'); current = makePattern(fd.get('name'), w, h); await savePattern(current); history = []; future = []; selected = 0; tool = 'paint'; zoom = 1; renderEditor(); } if (event.target.id === 'weave-form') { event.preventDefault(); const fd = new FormData(event.target); const axis = fd.get('axis'); const p = createWeavingProgress(current, { axis, start: fd.get('start'), serpentine: fd.has('serpentine') }, uid(), timestamp()); current.progress ||= []; current.progress.push(p); progressId = p.id; scheduleSave(); renderWeaving(); } if (event.target.id === 'colors-form') event.preventDefault(); };
 }
 function findProgress() { return current.progress.find(p => p.id === progressId) || current.progress[0]; }
 function addColor() { const name = prompt('Nombre del color', 'Nuevo color'); if (!name?.trim()) return; const hex = prompt('Color hexadecimal', '#d9a7b0'); if (!/^#[\da-f]{6}$/i.test(hex || '')) return notify('Usa un color hexadecimal como #d9a7b0.'); current.palette.push({ id: uid(), name: name.trim(), hex }); selected = current.palette.length - 1; renderEditor(); scheduleSave(); }

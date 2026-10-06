@@ -11,6 +11,8 @@ El README define una aplicacion local-first para disenar, editar y tejer patrone
 - Inicio con lista, vista previa, dimensiones y porcentaje de progreso; crear, abrir, renombrar, duplicar y eliminar disenos.
 - Editor Canvas para pintar, borrar, rellenar, deshacer, rehacer, zoom, mover el viewport y cambiar dimensiones.
 - Paleta editable y seleccion de colores.
+- Paleta con 107 colores predeterminados en grupos cromaticos, filtro por categoria y busqueda, vistas de cuadrícula/lista, y un grupo separado para tonos personalizados.
+- Selector avanzado con tabla de color, matiz, intensidad/saturacion, brillo, valores HEX/RGB, cuentagotas de pantalla y muestreo desde imagen cargada.
 - Guardado automatico en IndexedDB y funcionamiento PWA offline despues de cargar la app.
 - Importacion JSON validada y exportacion JSON.
 - Tejido por filas o columnas, recorrido serpentino, avance, retroceso, salto y multiples progresos.
@@ -19,7 +21,7 @@ El README define una aplicacion local-first para disenar, editar y tejer patrone
 ## Estructura aplicada
 
 - `src/app/`: inicio y coordinacion de pantallas.
-- `src/assets/`: estilos e icono.
+- `src/assets/`: estilos base, estilos del selector de color e icono.
 - `src/components/common/`, `src/components/editor/`, `src/components/palette/` y `src/components/pattern/`: toast, canvas, paleta y vistas previas.
 - `src/composables/`: autosave reutilizable.
 - `src/domain/pattern/` y `src/domain/weaving/`: modelo, reglas, flood fill, resize y secuencia.
@@ -59,6 +61,7 @@ Abrir la direccion que muestra el servidor (normalmente `http://localhost:4173`)
 - Separar el progreso de tejido en una tabla IndexedDB independiente, tal como recomienda el README; actualmente se guarda dentro del registro del patron.
 - Completar componentes Vue y stores Pinia, accesibilidad con lector de pantalla, seleccion de area y pan con gesto multitactil.
 - Avisar cuando se edita un patron con progresos de tejido activos.
+- El cuentagotas de pantalla depende del soporte de EyeDropper del navegador; el muestreo de imagen sirve como alternativa.
 - Incorporar pruebas unitarias permanentes y pruebas end-to-end.
 - Exportaciones a PDF, imagen y Excel; estadisticas, plantillas y catalogo de colores.
 - Validacion manual en navegadores y telefonos reales.
@@ -66,8 +69,9 @@ Abrir la direccion que muestra el servidor (normalmente `http://localhost:4173`)
 ## Verificacion realizada en esta revision
 
 - `node --check` para los modulos JS y el servidor.
-- Comprobacion de la cadena de imports relativa: 17 modulos resueltos.
+- Comprobacion de la cadena de imports relativa: 19 modulos resueltos.
 - Pruebas rapidas de dominio para validacion, flood fill, resize y coordenadas de tejido.
+- Comprobaciones del catalogo de 107 tonos, conversion HEX/HSV, renderizado lista/cuadricula y presencia de controles del selector avanzado.
 - Inicio doble de `npm.cmd start`: la segunda instancia detecto ocupado 4173 y eligio 4174.
 - Respuesta HTTP 200 para la pagina y todos los recursos principales.
 

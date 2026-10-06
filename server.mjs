@@ -8,6 +8,11 @@ const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 const server = createServer(async (request, response) => {
   try {
     const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+    if (pathname === '/health') {
+      response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      response.end(JSON.stringify({ status: 'ok' }));
+      return;
+    }
     const file = resolve(root, `.${pathname === '/' ? '/index.html' : pathname}`);
     if (file !== root && !file.startsWith(root + sep)) throw new Error('not found');
     const body = await readFile(file);
@@ -19,7 +24,9 @@ const server = createServer(async (request, response) => {
   }
 });
 const requestedPort = Number(process.env.PORT) || 4173;
-const maximumPort = Number(process.env.PORT) ? requestedPort : requestedPort + 20;
+const railwayPort = Boolean(process.env.PORT);
+const maximumPort = railwayPort ? requestedPort : requestedPort + 20;
+const host = railwayPort ? '0.0.0.0' : '127.0.0.1';
 
 function listen(port) {
   server.once('error', error => {
@@ -31,7 +38,7 @@ function listen(port) {
     console.error(`No se pudo iniciar el servidor en el puerto ${port}: ${error.message}`);
     process.exitCode = 1;
   });
-  server.listen(port, '127.0.0.1', () => console.log(`Mostacillas disponible en http://localhost:${port}`));
+  server.listen(port, host, () => console.log(`Mostacillas disponible en http://${railwayPort ? '0.0.0.0' : 'localhost'}:${port}`));
 }
 
 listen(requestedPort);

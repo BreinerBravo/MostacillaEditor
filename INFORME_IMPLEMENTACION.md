@@ -17,6 +17,7 @@ El README define una aplicacion local-first para disenar, editar y tejer patrone
 - Importacion JSON validada y exportacion JSON.
 - Tejido por filas o columnas, recorrido serpentino, avance, retroceso, salto y multiples progresos.
 - El servidor prueba el puerto 4173 y, si esta ocupado, intenta el siguiente puerto disponible hasta 20 puertos. Imprime la direccion que quedo activa.
+- Preparacion para Railway: servidor escucha la variable `PORT` en `0.0.0.0`, ruta `/health` para healthcheck, runtime Node 20+ y guia de conexion a GitHub en `DEPLOY_RAILWAY.md`.
 
 ## Estructura aplicada
 

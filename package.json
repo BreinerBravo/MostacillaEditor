@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "description": "Diseñador local y offline de manillas de mostacillas",
   "scripts": {
     "start": "node server.mjs"
